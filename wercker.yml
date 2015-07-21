@@ -1,0 +1,40 @@
+box: golio/ubuntu:latest
+build:
+  steps:
+    - script:
+        name: dummy step
+        code: |
+          export
+deploy:
+  steps:
+    - add-ssh-key:
+        keyname: BUILD_KEY
+    - script:
+        name: install ssh
+        code: |
+          ssh-agent -s
+    - script:
+        name: clone on build server
+        code: |
+          ssh -tt -l $BUILD_USER -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $BUILD_SERVER /bin/bash -e <<EOF
+          rm -rf ./$WERCKER_GIT_REPOSITORY
+          git clone git@$WERCKER_GIT_DOMAIN:$WERCKER_GIT_OWNER/$WERCKER_GIT_REPOSITORY.git
+          cd ./$WERCKER_GIT_REPOSITORY
+          git checkout $WERCKER_GIT_COMMIT
+          exit 0
+          EOF
+    - script:
+        name: deploy the image
+        code: |
+          ssh -t -l $BUILD_USER -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no $BUILD_SERVER /bin/bash -e <<EOF
+          cd ./$WERCKER_GIT_REPOSITORY
+          docker build -t golio/liquibase .
+          docker login -u $WANAMU_REGISTRY_USER -p $WANAMU_REGISTRY_PASSWORD $WANAMU_REGISTRY
+          docker tag golio/liquibase $WANAMU_REGISTRY/golio/liquibase:latest
+          docker tag golio/liquibase $WANAMU_REGISTRY/golio/liquibase:$WERCKER_GIT_COMMIT
+          docker push $WANAMU_REGISTRY/golio/liquibase
+          docker rmi -f golio/liquibase
+          cd ..
+          rm -rf ./$WERCKER_GIT_REPOSITORY
+          exit 0
+          EOF
