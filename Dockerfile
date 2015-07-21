@@ -9,7 +9,8 @@ MAINTAINER Golio
 COPY lib/liquibase-3.4.0-bin.tar.gz /tmp/liquibase-3.4.0-bin.tar.gz
 
 # Create a directory for liquibase
-RUN mkdir /opt/liquibase && \
+RUN mkdir /changelogs && \
+	mkdir /opt/liquibase && \
     tar -xzf /tmp/liquibase-3.4.0-bin.tar.gz -C /opt/liquibase && \
 	chmod +x /opt/liquibase/liquibase && \
 	ln -s /opt/liquibase/liquibase /usr/local/bin/
